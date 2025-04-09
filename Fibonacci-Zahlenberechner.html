@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Fibonacci Rechner</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background-color: #121212;
+      color: #f1f1f1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background-color: #1e1e1e;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    h1 {
+      color: #00e5ff;
+      margin-bottom: 20px;
+    }
+
+    input[type="number"] {
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      width: 80%;
+      margin-bottom: 20px;
+      background-color: #2a2a2a;
+      color: #fff;
+      font-size: 1em;
+    }
+
+    button {
+      background: linear-gradient(135deg, #00e5ff, #0088ff);
+      border: none;
+      padding: 12px 25px;
+      border-radius: 10px;
+      color: white;
+      font-size: 1em;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+      background: linear-gradient(135deg, #0088ff, #00e5ff);
+      transform: scale(1.05);
+    }
+
+    #ergebnis {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: #bb86fc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔢 Fibonacci Rechner</h1>
+    <input type="number" id="eingabe" placeholder="Zahl eingeben (z.B. 10)">
+    <br>
+    <button onclick="berechneFibonacci()">Berechne</button>
+    <p id="ergebnis"></p>
+  </div>
+
+  <script>
+    function berechneFibonacci() {
+      let n = parseInt(document.getElementById("eingabe").value);
+      let ergebnis = document.getElementById("ergebnis");
+
+      if (isNaN(n) || n < 0) {
+        ergebnis.textContent = "⚠️ Bitte positive Zahl eingeben!";
+        return;
+      }
+
+      function fibonacci(num) {
+        if (num === 0) return 0;
+        if (num === 1) return 1;
+        let a = 0, b = 1, temp;
+        for (let i = 2; i <= num; i++) {
+          temp = a + b;
+          a = b;
+          b = temp;
+        }
+        return b;
+      }
+
+      ergebnis.textContent = "🔥 Fibonacci-Zahl bei " + n + " ist: " + fibonacci(n);
+    }
+  </script>
+</body>
+</html>
+
