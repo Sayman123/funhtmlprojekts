@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Maze Game</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; }
+    canvas { border: 2px solid black; margin-top: 20px; cursor: crosshair; }
+    #levelDisplay { font-size: 20px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Maze Game</h1>
+  <div id="levelDisplay">Level: 1</div>
+  <canvas id="mazeCanvas" width="500" height="500"></canvas>
+
+  <script>
+    const canvas = document.getElementById("mazeCanvas");
+    const ctx = canvas.getContext("2d");
+    const size = 50;
+    const cellSize = canvas.width / size;
+
+    let maze = [];
+    let player = { x: 0, y: 0 };
+    let exit = { x: size - 1, y: size - 1 };
+
+    const levelDisplay = document.getElementById("levelDisplay");
+
+    function getLevel() {
+      return parseInt(localStorage.getItem("mazeLevel")) || 1;
+    }
+
+    function setLevel(lvl) {
+      localStorage.setItem("mazeLevel", lvl);
+      levelDisplay.textContent = `Level: ${lvl}`;
+    }
+
+    function logSolvedMaze() {
+      const history = JSON.parse(localStorage.getItem("mazeHistory")) || [];
+      history.push(new Date().toLocaleString());
+      localStorage.setItem("mazeHistory", JSON.stringify(history));
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function generateMazeAnimated() {
+      maze = Array.from({ length: size }, () => Array(size).fill(1));
+
+      function drawCell(x, y, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+      }
+
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      async function carve(x, y) {
+        const dirs = shuffle([ [1,0], [-1,0], [0,1], [0,-1] ]);
+        for (let [dx, dy] of dirs) {
+          const nx = x + dx * 2;
+          const ny = y + dy * 2;
+          if (nx >= 0 && ny >= 0 && nx < size && ny < size && maze[ny][nx] === 1) {
+            maze[y + dy][x + dx] = 0;
+            maze[ny][nx] = 0;
+            drawCell(x + dx, y + dy, "white");
+            drawCell(nx, ny, "white");
+            await sleep(2);
+            await carve(nx, ny);
+          }
+        }
+      }
+
+      function findExitPosition() {
+        let visited = Array.from({ length: size }, () => Array(size).fill(false));
+        let stack = [{ x: 0, y: 0 }];
+        visited[0][0] = true;
+        let last = { x: 0, y: 0 };
+
+        while (stack.length > 0) {
+          let { x, y } = stack.pop();
+          last = { x, y };
+          for (let [dx, dy] of [ [1,0], [-1,0], [0,1], [0,-1] ]) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && ny >= 0 && nx < size && ny < size && !visited[ny][nx] && maze[ny][nx] === 0) {
+              visited[ny][nx] = true;
+              stack.push({ x: nx, y: ny });
+            }
+          }
+        }
+        return last;
+      }
+
+      maze[0][0] = 0;
+      drawCell(0, 0, "white");
+      await carve(0, 0);
+      exit = findExitPosition();
+      drawMaze();
+    }
+
+    function drawMaze() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          if (maze[y][x] === 1) {
+            ctx.fillStyle = "black";
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+      ctx.fillStyle = "blue";
+      ctx.fillRect(player.x * cellSize, player.y * cellSize, cellSize, cellSize);
+      ctx.fillStyle = "green";
+      ctx.fillRect(exit.x * cellSize, exit.y * cellSize, cellSize, cellSize);
+    }
+
+    function movePlayer(dx, dy) {
+      const nx = player.x + dx;
+      const ny = player.y + dy;
+      if (nx >= 0 && ny >= 0 && nx < size && ny < size && maze[ny][nx] === 0) {
+        player.x = nx;
+        player.y = ny;
+        drawMaze();
+        checkWin();
+      }
+    }
+
+    function checkWin() {
+      if (player.x === exit.x && player.y === exit.y) {
+        alert("Maze geschafft!");
+        let lvl = getLevel();
+        setLevel(lvl + 1);
+        logSolvedMaze();
+        resetGame();
+      }
+    }
+
+    async function resetGame() {
+      player = { x: 0, y: 0 };
+      await generateMazeAnimated();
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp") movePlayer(0, -1);
+      if (e.key === "ArrowDown") movePlayer(0, 1);
+      if (e.key === "ArrowLeft") movePlayer(-1, 0);
+      if (e.key === "ArrowRight") movePlayer(1, 0);
+    });
+
+    // Start
+    setLevel(getLevel());
+    resetGame();
+  </script>
+</body>
+</html>
+

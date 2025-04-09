@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Code Cracker 9000</title>
+  <style>
+    body {
+      background-color: black;
+      color: limegreen;
+      font-family: "Courier New", monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    h2 {
+      color: #00ff00;
+    }
+
+    input {
+      font-size: 24px;
+      text-align: center;
+      width: 100px;
+      background: black;
+      color: limegreen;
+      border: 2px solid limegreen;
+      margin-top: 10px;
+    }
+
+    button {
+      font-size: 18px;
+      margin-top: 20px;
+      background: black;
+      color: limegreen;
+      border: 2px solid limegreen;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+
+    #attempt {
+      font-size: 48px;
+      margin-top: 50px;
+      animation: spin 0.5s linear infinite;
+    }
+
+    #result {
+      font-size: 32px;
+      margin-top: 30px;
+      color: #00ff00;
+    }
+
+    @keyframes spin {
+      0% { transform: rotateX(0); }
+      100% { transform: rotateX(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🔓 Gib den geheimen 4-stelligen Code ein:</h2>
+  <input type="text" id="codeInput" maxlength="4">
+  <button onclick="startCracking()">💥 Crack Code</button>
+
+  <div id="attempt">----</div>
+  <div id="result"></div>
+
+  <script>
+    async function startCracking() {
+      const code = document.getElementById("codeInput").value;
+      const attemptDisplay = document.getElementById("attempt");
+      const resultDisplay = document.getElementById("result");
+
+      if (!/^\d{4}$/.test(code)) {
+        alert("Ey, 4 Ziffern oder nix!");
+        return;
+      }
+
+      resultDisplay.textContent = "";
+      attemptDisplay.style.animation = "spin 0.1s linear infinite";
+
+      for (let i = 0; i <= 9999; i++) {
+        const guess = i.toString().padStart(4, "0");
+        attemptDisplay.textContent = guess;
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        if (guess === code) {
+          attemptDisplay.style.animation = "none";
+          resultDisplay.textContent = "✅ Code gefunden: " + guess;
+          break;
+        }
+      }
+    }
+  </script>
+
+</body>
+</html>

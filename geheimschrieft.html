@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Atbash Chiffre</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 2rem;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    textarea, button {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+    }
+
+    textarea {
+      background-color: #1e1e1e;
+      color: #fff;
+      resize: vertical;
+    }
+
+    button {
+      background-color: #333;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #555;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .button-group button {
+      flex: 1;
+    }
+
+    label {
+      margin-top: 1rem;
+      display: block;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Buchstaben Tauschen</h1>
+
+  <label for="inputText">🔤 Dein Text:</label>
+  <textarea id="inputText" rows="4" placeholder="Hier deinen Text eingeben..."></textarea>
+
+  <div class="button-group">
+    <button onclick="encrypt()">Encrypt 🔁</button>
+    <button onclick="decrypt()">Decrypt 🔄</button>
+  </div>
+
+  <label for="outputText">📄 Ergebnis:</label>
+  <textarea id="outputText" rows="4" readonly placeholder="Hier erscheint der umgeschriebene Text..."></textarea>
+
+  <script>
+    function atbash(text) {
+      const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const lowerAbc = abc.toLowerCase();
+      let result = "";
+
+      for (let char of text) {
+        if (abc.includes(char)) {
+          result += abc[25 - abc.indexOf(char)];
+        } else if (lowerAbc.includes(char)) {
+          result += lowerAbc[25 - lowerAbc.indexOf(char)];
+        } else {
+          result += char;
+        }
+      }
+
+      return result;
+    }
+
+    function encrypt() {
+      const input = document.getElementById("inputText").value;
+      const output = atbash(input);
+      document.getElementById("outputText").value = output;
+    }
+
+    function decrypt() {
+      // Atbash ist symmetrisch, also gleich wie encrypt
+      encrypt();
+    }
+  </script>
+</body>
+</html>
+

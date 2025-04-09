@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Geheimschrift Tool</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 2rem;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    textarea, button, select {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      box-sizing: border-box;
+      background-color: #1e1e1e;
+      color: #fff;
+    }
+
+    button {
+      background-color: #333;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #555;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .button-group button {
+      flex: 1;
+    }
+
+    label {
+      margin-top: 1rem;
+      display: block;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>🕵️ Geheimschrift-Tool</h1>
+
+  <label for="inputText">🔤 Dein Text:</label>
+  <textarea id="inputText" rows="4" placeholder="Text hier eingeben..."></textarea>
+
+  <label for="methodSelect">🔧 Verschlüsselungsmethode wählen:</label>
+  <select id="methodSelect">
+    <option value="atbash">🔁 Atbash (A ⇄ Z)</option>
+    <option value="zahlen">🔢 Zahlen-Geheimschrift (A=1, B=2)</option>
+  </select>
+
+  <div class="button-group">
+    <button onclick="encrypt()">Encrypt 🔐</button>
+    <button onclick="decrypt()">Decrypt 🔓</button>
+  </div>
+
+  <label for="outputText">📄 Ergebnis:</label>
+  <textarea id="outputText" rows="4" readonly></textarea>
+
+  <script>
+    function atbash(text) {
+      const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const lowerAbc = abc.toLowerCase();
+      let result = "";
+
+      for (let char of text) {
+        if (abc.includes(char)) {
+          result += abc[25 - abc.indexOf(char)];
+        } else if (lowerAbc.includes(char)) {
+          result += lowerAbc[25 - lowerAbc.indexOf(char)];
+        } else {
+          result += char;
+        }
+      }
+      return result;
+    }
+
+    function toNumbers(text) {
+      let result = "";
+      for (let char of text.toUpperCase()) {
+        let code = char.charCodeAt(0);
+        if (code >= 65 && code <= 90) {
+          result += (code - 64) + " ";
+        } else {
+          result += char + " ";
+        }
+      }
+      return result.trim();
+    }
+
+    function fromNumbers(text) {
+      return text.split(" ").map(item => {
+        let num = parseInt(item);
+        if (!isNaN(num) && num >= 1 && num <= 26) {
+          return String.fromCharCode(64 + num);
+        } else {
+          return item;
+        }
+      }).join("");
+    }
+
+    function encrypt() {
+      const text = document.getElementById("inputText").value;
+      const method = document.getElementById("methodSelect").value;
+      let result = "";
+
+      if (method === "atbash") {
+        result = atbash(text);
+      } else if (method === "zahlen") {
+        result = toNumbers(text);
+      }
+
+      document.getElementById("outputText").value = result;
+    }
+
+    function decrypt() {
+      const text = document.getElementById("inputText").value;
+      const method = document.getElementById("methodSelect").value;
+      let result = "";
+
+      if (method === "atbash") {
+        result = atbash(text); // Atbash ist symmetrisch
+      } else if (method === "zahlen") {
+        result = fromNumbers(text);
+      }
+
+      document.getElementById("outputText").value = result;
+    }
+  </script>
+</body>
+</html>

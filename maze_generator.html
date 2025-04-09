@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Maze Generator</title>
+  <style>
+    canvas { border: 1px solid black; display: block; margin: 0 auto; }
+    body { text-align: center; font-family: sans-serif; }
+    input, button { margin: 5px; padding: 5px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Maze Generator</h1>
+  <label>Breite:</label>
+  <input id="colsInput" type="number" value="30" min="5" max="150">
+  <label>Höhe:</label>
+  <input id="rowsInput" type="number" value="30" min="5" max="150"><br>
+  <button onclick="generateMaze()">Maze erzeugen</button>
+  <button onclick="solveMaze()">Lösen</button><br><br>
+  <canvas id="maze" width="600" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById("maze");
+    const ctx = canvas.getContext("2d");
+
+    let cols = 30;
+    let rows = 30;
+    let cellSize = 20;
+    let grid = [], parent = [], edges = [], px = 0, py = 0;
+
+    class Cell {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.walls = [true, true, true, true]; // oben, rechts, unten, links
+      }
+      draw() {
+        const x = this.x * cellSize;
+        const y = this.y * cellSize;
+        ctx.strokeStyle = "black";
+        if (this.walls[0]) ctx.strokeRect(x, y, cellSize, 1);
+        if (this.walls[1]) ctx.strokeRect(x + cellSize - 1, y, 1, cellSize);
+        if (this.walls[2]) ctx.strokeRect(x, y + cellSize - 1, cellSize, 1);
+        if (this.walls[3]) ctx.strokeRect(x, y, 1, cellSize);
+      }
+    }
+
+    function index(x, y) {
+      if (x < 0 || y < 0 || x >= cols || y >= rows) return -1;
+      return x + y * cols;
+    }
+
+    function find(i) {
+      if (parent[i] !== i) parent[i] = find(parent[i]);
+      return parent[i];
+    }
+
+    function union(i, j) {
+      parent[find(j)] = find(i);
+    }
+
+    async function generateMaze() {
+      cols = parseInt(document.getElementById("colsInput").value);
+      rows = parseInt(document.getElementById("rowsInput").value);
+      cellSize = Math.floor(Math.min(600 / cols, 600 / rows));
+      canvas.width = cols * cellSize;
+      canvas.height = rows * cellSize;
+
+      grid = [];
+      parent = Array.from({ length: cols * rows }, (_, i) => i);
+      edges = [];
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          grid.push(new Cell(x, y));
+        }
+      }
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const i = index(x, y);
+          if (x < cols - 1) edges.push([i, index(x + 1, y), 1]);
+          if (y < rows - 1) edges.push([i, index(x, y + 1), 2]);
+        }
+      }
+      edges.sort(() => Math.random() - 0.5);
+
+      for (let [a, b, dir] of edges) {
+        if (find(a) !== find(b)) {
+          union(a, b);
+          if (dir === 1) {
+            grid[a].walls[1] = false;
+            grid[b].walls[3] = false;
+          } else {
+            grid[a].walls[2] = false;
+            grid[b].walls[0] = false;
+          }
+        }
+        drawMaze();
+        await new Promise(r => setTimeout(r, 1));
+      }
+
+      grid[0].walls[3] = false;
+      grid[index(cols - 1, rows - 1)].walls[1] = false;
+      px = 0;
+      py = 0;
+      drawPlayer();
+    }
+
+    function drawMaze() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      grid.forEach(cell => cell.draw());
+    }
+
+    function drawPlayer() {
+      ctx.fillStyle = "red";
+      ctx.fillRect(px * cellSize + 1, py * cellSize + 1, cellSize - 2, cellSize - 2);
+    }
+
+    function heuristic(a, b) {
+      return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+    }
+
+    async function solveMaze() {
+      const openSet = [grid[0]];
+      const cameFrom = new Map();
+      const gScore = new Map(grid.map(c => [c, Infinity]));
+      gScore.set(grid[0], 0);
+      const fScore = new Map(grid.map(c => [c, Infinity]));
+      fScore.set(grid[0], heuristic(grid[0], grid[index(cols - 1, rows - 1)]));
+      const visited = new Set();
+
+      while (openSet.length > 0) {
+        openSet.sort((a, b) => fScore.get(a) - fScore.get(b));
+        const current = openSet.shift();
+
+        if (current.x === cols - 1 && current.y === rows - 1) {
+          await reconstructPath(cameFrom, current);
+          return;
+        }
+
+        visited.add(current);
+        drawMaze();
+        drawVisited(visited, "green");
+        drawVisited(openSet, "blue");
+        drawPlayer();
+        await new Promise(r => setTimeout(r, 1));
+
+        const neighbors = getNeighbors(current);
+        for (const neighbor of neighbors) {
+          const tentativeG = gScore.get(current) + 1;
+          if (tentativeG < gScore.get(neighbor)) {
+            cameFrom.set(neighbor, current);
+            gScore.set(neighbor, tentativeG);
+            fScore.set(neighbor, tentativeG + heuristic(neighbor, grid[index(cols - 1, rows - 1)]));
+            if (!openSet.includes(neighbor)) openSet.push(neighbor);
+          }
+        }
+      }
+    }
+
+    function getNeighbors(cell) {
+      const neighbors = [];
+      const { x, y, walls } = cell;
+      if (!walls[0]) neighbors.push(grid[index(x, y - 1)]);
+      if (!walls[1]) neighbors.push(grid[index(x + 1, y)]);
+      if (!walls[2]) neighbors.push(grid[index(x, y + 1)]);
+      if (!walls[3]) neighbors.push(grid[index(x - 1, y)]);
+      return neighbors.filter(n => n);
+    }
+
+    function drawVisited(set, color) {
+      ctx.fillStyle = color;
+      set.forEach(cell => {
+        ctx.fillRect(cell.x * cellSize + 2, cell.y * cellSize + 2, cellSize - 4, cellSize - 4);
+      });
+    }
+
+    async function reconstructPath(cameFrom, current) {
+      const path = [];
+      while (cameFrom.has(current)) {
+        path.push(current);
+        current = cameFrom.get(current);
+      }
+      path.push(grid[0]);
+      path.reverse();
+      for (const cell of path) {
+        drawMaze();
+        drawVisited(path, "yellow");
+        drawPlayer();
+        await new Promise(r => setTimeout(r, 1));
+      }
+    }
+  </script>
+</body>
+</html>

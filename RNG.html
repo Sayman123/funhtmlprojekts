@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Sayman's RNG Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #1e1e2f;
+      color: #fff;
+      text-align: center;
+      padding: 50px;
+    }
+    button {
+      padding: 15px 30px;
+      margin: 10px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    #rollBtn { background-color: #4CAF50; }
+    #autoRollBtn { background-color: #FF9800; }
+    #invBtn, #indexBtn { background-color: #2196F3; }
+    .window {
+      background-color: #2a2a3d;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px auto;
+      width: 300px;
+      text-align: left;
+    }
+    .item-common { color: #bbb; }
+    .item-uncommon { color: #3fbf3f; }
+    .item-rare { color: #1e90ff; }
+    .item-epic { color: #9932cc; }
+    .item-legendary { color: #ffa500; }
+    .item-mythic { color: #ff1493; }
+    .item-godly { color: #ffd700; text-shadow: 0 0 5px #fff; }
+    #result.roll-animation {
+      animation: flash 0.5s ease-in-out;
+    }
+    @keyframes flash {
+      0% { transform: scale(1); color: white; }
+      50% { transform: scale(1.3); color: #ff0; }
+      100% { transform: scale(1); color: white; }
+    }
+    #item-image {
+      width: 100px;
+      height: 100px;
+      margin: 10px auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎲 Sayman's RNG Game</h1>
+  <p id="rollCountDisplay">Rolls: 0</p>
+  <p id="result">Klick auf "Rollen" um zu starten!</p>
+  <img id="item-image" src="" alt="" style="display:none;">
+  <button id="rollBtn">🎲 Rollen</button>
+  <button id="autoRollBtn" disabled>⚙️ Auto-Roll (100x)</button><br>
+  <button id="invBtn">📦 Inventar</button>
+  <button id="indexBtn">📖 Index</button>
+
+  <div id="inventory" class="window" style="display:none;"></div>
+  <div id="index" class="window" style="display:none;"></div>
+
+  <audio id="bg-music" autoplay loop>
+    <source src="https://cdn.pixabay.com/download/audio/2022/11/03/audio_9e7fe434e5.mp3?filename=future-ambient-117661.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    let items = {
+      "Common Pebble": 30,
+      "Rusty Nail": 20,
+      "Worn-Out Shoe": 10,
+      "Cursed Leaf": 8,
+      "Mystery Dust": 5,
+      "Golden Tooth": 4,
+      "Shiny Rock": 3,
+      "Enchanted Stick": 2,
+      "Crystal Fragment": 1,
+      "Orb of Light": 0.5,
+      "Phoenix Feather": 0.3,
+      "Dragon Scale": 0.1,
+      "Infinity Cube": 0.05,
+      "Time Relic": 0.03,
+      "Dimensional Key": 0.01,
+      "Ancient Scroll": 0.008,
+      "Dark Core": 0.005,
+      "Heavenly Tear": 0.003,
+      "Quantum Spark": 0.001,
+      "Sayman – God of RNG": 0.0001
+    };
+
+    for (let i = 1; i <= 30; i++) {
+      items[`Mystery Item ${i}`] = Math.random() * 2 + 0.1;
+    }
+
+    let inventory = JSON.parse(localStorage.getItem("rngInventory")) || {};
+    let rollCount = parseInt(localStorage.getItem("rngRollCount")) || 0;
+    document.getElementById("rollCountDisplay").textContent = `Rolls: ${rollCount}`;
+
+    function getItemClass(chance) {
+      if (chance >= 20) return "item-common";
+      if (chance >= 5) return "item-uncommon";
+      if (chance >= 1) return "item-rare";
+      if (chance >= 0.1) return "item-epic";
+      if (chance >= 0.01) return "item-legendary";
+      if (chance >= 0.001) return "item-mythic";
+      return "item-godly";
+    }
+
+    function getItemImage(item) {
+      const safeName = item.toLowerCase().replace(/[^a-z0-9]/g, "_");
+      return `https://dummyimage.com/100x100/333/fff&text=${encodeURIComponent(safeName)}`;
+    }
+
+    function rollItem() {
+      rollCount++;
+      localStorage.setItem("rngRollCount", rollCount);
+      document.getElementById("rollCountDisplay").textContent = `Rolls: ${rollCount}`;
+      if (rollCount >= 100) {
+        document.getElementById("autoRollBtn").disabled = false;
+      }
+
+      let roll = Math.random() * 100;
+      let current = 0;
+
+      for (let item in items) {
+        current += items[item];
+        if (roll <= current) {
+          inventory[item] = (inventory[item] || 0) + 1;
+          localStorage.setItem("rngInventory", JSON.stringify(inventory));
+
+          let itemClass = getItemClass(items[item]);
+          let result = document.getElementById("result");
+          result.innerHTML = `Du hast: <span class="${itemClass}">${item}</span>`;
+          result.classList.remove("roll-animation");
+          void result.offsetWidth;
+          result.classList.add("roll-animation");
+
+          let image = document.getElementById("item-image");
+          image.src = getItemImage(item);
+          image.style.display = "block";
+          return;
+        }
+      }
+    }
+
+    function autoRoll() {
+      for (let i = 0; i < 10; i++) {
+        rollItem();
+      }
+    }
+
+    function showInventory() {
+      const inv = document.getElementById("inventory");
+      inv.innerHTML = "<h3>📦 Dein Inventar:</h3>";
+      for (let item in inventory) {
+        let itemClass = getItemClass(items[item] || 0);
+        inv.innerHTML += `<p class="${itemClass}">${item}: ${inventory[item]}</p>`;
+      }
+      inv.style.display = "block";
+    }
+
+    function showIndex() {
+      const ind = document.getElementById("index");
+      ind.innerHTML = "<h3>📖 Index:</h3>";
+      for (let item in items) {
+        let hasIt = inventory[item] ? "✅" : "❌";
+        let itemClass = getItemClass(items[item]);
+        ind.innerHTML += `<p class="${itemClass}">${item} ${hasIt}</p>`;
+      }
+      ind.style.display = "block";
+    }
+
+    document.getElementById("rollBtn").onclick = rollItem;
+    document.getElementById("autoRollBtn").onclick = autoRoll;
+    document.getElementById("invBtn").onclick = showInventory;
+    document.getElementById("indexBtn").onclick = showIndex;
+  </script>
+</body>
+</html>
